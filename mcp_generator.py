@@ -34,30 +34,46 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# Load environment variables ONLY from .env file (not system env)
+# Load environment variables from .env file (for local dev) + system env (for Render)
 env_vars = dotenv_values(".env")
 
-# Required environment variables
-MY_NUMBER = env_vars.get("MY_NUMBER")
-BL_WORKSPACE = env_vars.get("BL_WORKSPACE")
-BL_API_KEY = env_vars.get("BL_API_KEY")
-MORPH_API_KEY = env_vars.get("MORPH_API_KEY")
-OPENAI_API_KEY = env_vars.get("OPENAI_API_KEY")
-DOWNLOAD_BASE_URL = env_vars.get("DOWNLOAD_BASE_URL", "https://run.blaxel.ai")
+def get_env_var(key: str, default: str = None) -> str:
+    """Get environment variable from .env file or system environment (fallback for Render)."""
+    return env_vars.get(key) or os.environ.get(key, default)
+
+# Required environment variables (try .env first, then system env for Render)
+MY_NUMBER = get_env_var("MY_NUMBER")
+AUTH_TOKEN = get_env_var("AUTH_TOKEN")
+BL_WORKSPACE = get_env_var("BL_WORKSPACE")
+BL_API_KEY = get_env_var("BL_API_KEY")
+MORPH_API_KEY = get_env_var("MORPH_API_KEY")
+OPENAI_API_KEY = get_env_var("OPENAI_API_KEY")
+DOWNLOAD_BASE_URL = get_env_var("DOWNLOAD_BASE_URL", "https://run.blaxel.ai")
 
 # Validate required environment variables
 required_vars = {
     "MY_NUMBER": MY_NUMBER,
+    "AUTH_TOKEN": AUTH_TOKEN,  # Required for MCP authentication
+    "OPENAI_API_KEY": OPENAI_API_KEY,  # Required for code generation
+}
+
+# Optional Blaxel variables (for legacy features, but not required for main functionality)
+optional_vars = {
     "BL_WORKSPACE": BL_WORKSPACE,
     "BL_API_KEY": BL_API_KEY,
     "MORPH_API_KEY": MORPH_API_KEY,
-    "OPENAI_API_KEY": OPENAI_API_KEY
 }
 
-missing_vars = [name for name, value in required_vars.items() if not value]
-if missing_vars:
-    logger.error(f"Missing required environment variables: {missing_vars}")
-    raise ValueError(f"Required environment variables not set: {missing_vars}")
+missing_required = [name for name, value in required_vars.items() if not value]
+missing_optional = [name for name, value in optional_vars.items() if not value]
+
+if missing_required:
+    logger.error(f"Missing required environment variables: {missing_required}")
+    raise ValueError(f"Required environment variables not set: {missing_required}")
+
+if missing_optional:
+    logger.warning(f"Missing optional Blaxel environment variables: {missing_optional}")
+    logger.warning("Blaxel features will be disabled, but core MCP generation will work with OpenAI.")
 
 # Initialize components
 mcp = FastMCP("MCP Code Generator")

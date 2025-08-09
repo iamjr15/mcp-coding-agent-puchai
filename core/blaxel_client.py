@@ -24,18 +24,22 @@ class BlaxelClient:
     
     def __init__(self):
         """Initialize Blaxel client."""
-        # Load environment variables ONLY from .env file (not system env)
+        # Load environment variables from .env file (for local dev) + system env (for Render)
         env_vars = dotenv_values(".env")
         
-        self.workspace = env_vars.get("BL_WORKSPACE")
-        self.api_key = env_vars.get("BL_API_KEY")
-        self.morph_api_key = env_vars.get("MORPH_API_KEY")
-        self.morph_model = env_vars.get("MORPH_MODEL", "morph-v2")
-        self.openai_api_key = env_vars.get("OPENAI_API_KEY")
+        def get_env_var(key: str, default: str = None) -> str:
+            """Get environment variable from .env file or system environment (fallback for Render)."""
+            return env_vars.get(key) or os.environ.get(key, default)
         
-        # Validate required credentials
+        self.workspace = get_env_var("BL_WORKSPACE")
+        self.api_key = get_env_var("BL_API_KEY")
+        self.morph_api_key = get_env_var("MORPH_API_KEY")
+        self.morph_model = get_env_var("MORPH_MODEL", "morph-v2")
+        self.openai_api_key = get_env_var("OPENAI_API_KEY")
+        
+        # Blaxel credentials are optional (warn if missing but don't fail)
         if not all([self.workspace, self.api_key, self.morph_api_key]):
-            raise ValueError("Missing required Blaxel credentials: BL_WORKSPACE, BL_API_KEY, MORPH_API_KEY")
+            logger.warning("Missing BL_WORKSPACE, BL_API_KEY, MORPH_API_KEY. Blaxel sandbox functionality is disabled.")
         
         if not self.openai_api_key:
             raise ValueError("Missing OPENAI_API_KEY for code generation")

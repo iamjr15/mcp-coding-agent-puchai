@@ -12,23 +12,29 @@ Deploy your MCP Code Generator to Render in minutes!
 
 Set these in Render Dashboard > Environment:
 
+### **🔴 Required Variables:**
 ```bash
-# OpenAI (Required for code generation)
-OPENAI_API_KEY=sk-your-openai-api-key
-
-# Blaxel (Optional - for any remaining features)
-BL_WORKSPACE=your_workspace_name
-BL_API_KEY=your_blaxel_api_key
-MORPH_API_KEY=your_morph_api_key
-MORPH_MODEL=morph-v2
-
-# MCP Authentication (for generated MCPs)
+# MCP Authentication (Required)
 AUTH_TOKEN=your_secure_token_here
 MY_NUMBER=919876543210
+
+# OpenAI (Required for code generation)
+OPENAI_API_KEY=sk-your-openai-api-key
 
 # Download URL (Set to your Render app URL)
 DOWNLOAD_BASE_URL=https://your-app.onrender.com
 ```
+
+### **🟡 Optional Variables (Legacy Blaxel features):**
+```bash
+# Only needed if using legacy Blaxel features
+BL_WORKSPACE=your_workspace_name
+BL_API_KEY=your_blaxel_api_key
+MORPH_API_KEY=your_morph_api_key
+MORPH_MODEL=morph-v2
+```
+
+**Note**: The generator now runs entirely on OpenAI, so Blaxel variables are optional.
 
 ## 🚀 Quick Deploy
 

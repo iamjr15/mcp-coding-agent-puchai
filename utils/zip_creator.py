@@ -68,9 +68,9 @@ async def create_download_zip(files: Dict[str, str], prompt: str, generation_id:
         with open(record_path, 'w') as f:
             json.dump(download_record, f, indent=2)
         
-        # Construct download URL
+        # Construct download URL (try .env first, then system env for Render)
         env_vars = dotenv_values(".env")
-        base_url = env_vars.get("DOWNLOAD_BASE_URL", "http://localhost:8086")
+        base_url = env_vars.get("DOWNLOAD_BASE_URL") or os.environ.get("DOWNLOAD_BASE_URL", "http://localhost:8086")
         download_url = f"{base_url}/download/{download_id}"
         
         logger.info(f"[{generation_id}] Zip package created: {zip_path.stat().st_size:,} bytes")
