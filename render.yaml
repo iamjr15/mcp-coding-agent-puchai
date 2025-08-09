@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: mcp-code-generator
+    env: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: python render_start.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+      - key: BL_WORKSPACE
+        sync: false  # Set this manually in Render dashboard
+      - key: BL_API_KEY
+        sync: false  # Set this manually in Render dashboard
+      - key: MORPH_API_KEY
+        sync: false  # Set this manually in Render dashboard
+      - key: MORPH_MODEL
+        value: morph-v2
+      - key: OPENAI_API_KEY
+        sync: false  # Set this manually in Render dashboard (required)
+      - key: AUTH_TOKEN
+        sync: false  # Set this manually in Render dashboard
+      - key: MY_NUMBER
+        sync: false  # Set this manually in Render dashboard
+      - key: DOWNLOAD_BASE_URL
+        sync: false  # Set this manually in Render dashboard
+    healthCheckPath: /health
+    autoDeploy: true
+    disk:
+      name: downloads-storage
+      mountPath: /app/static/downloads
+      sizeGB: 1
