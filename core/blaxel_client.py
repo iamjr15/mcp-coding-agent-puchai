@@ -1,7 +1,7 @@
 """
-Blaxel Client for MCP Code Generator
+blaxel client for mcp code generator
 
-Manages Blaxel sandbox creation and interaction for code generation.
+manages blaxel sandbox creation and interaction for code generation.
 """
 
 import asyncio
@@ -20,15 +20,15 @@ logger = logging.getLogger(__name__)
 
 
 class BlaxelClient:
-    """Client for managing Blaxel sandboxes and code generation."""
+    """client for managing blaxel sandboxes and code generation."""
     
     def __init__(self):
-        """Initialize Blaxel client."""
-        # Load environment variables from .env file (for local dev) + system env (for Render)
+        """init blaxel client."""
+        # load env vars (local .env + system env)
         env_vars = dotenv_values(".env")
         
         def get_env_var(key: str, default: str = None) -> str:
-            """Get environment variable from .env file or system environment (fallback for Render)."""
+            """get env var from .env or system (render fallback)."""
             return env_vars.get(key) or os.environ.get(key, default)
         
         self.workspace = get_env_var("BL_WORKSPACE")
@@ -37,35 +37,28 @@ class BlaxelClient:
         self.morph_model = get_env_var("MORPH_MODEL", "morph-v2")
         self.openai_api_key = get_env_var("OPENAI_API_KEY")
         
-        # Blaxel credentials are optional (warn if missing but don't fail)
+        # blaxel creds are optional (warn if missing)
         if not all([self.workspace, self.api_key, self.morph_api_key]):
             logger.warning("Missing BL_WORKSPACE, BL_API_KEY, MORPH_API_KEY. Blaxel sandbox functionality is disabled.")
         
         if not self.openai_api_key:
             raise ValueError("Missing OPENAI_API_KEY for code generation")
         
-        # Initialize OpenAI client for code generation
+        # init openai client for code generation
         self.openai_client = AsyncOpenAI(api_key=self.openai_api_key)
         
-        # Check if Blaxel can load credentials
+        # try loading blaxel credentials
         self.credentials = get_credentials()
         if not self.credentials:
-            logger.warning("Blaxel credentials not found via get_credentials(), using environment variables")
-            # Try to set up credentials manually
+            logger.warning("blaxel credentials not found via get_credentials(), using env vars")
+            # set up creds manually
             self.credentials = CredentialsType(
                 api_key=self.api_key,
                 workspace=self.workspace
             )
     
     async def create_code_generation_sandbox(self, generation_id: str) -> SandboxInstance:
-        """Create a Blaxel sandbox optimized for MCP code generation.
-        
-        Args:
-            generation_id: Unique identifier for this generation session
-            
-        Returns:
-            Configured Blaxel sandbox instance
-        """
+        """create a blaxel sandbox optimized for mcp code generation."""
         sandbox_name = f"mcp-gen-{generation_id}-{uuid.uuid4().hex[:8]}"
         
         logger.info(f"[{generation_id}] Creating Blaxel sandbox: {sandbox_name}")
@@ -83,7 +76,7 @@ class BlaxelClient:
                 ]
             })
             
-            # Wait for sandbox to be ready
+            # wait for sandbox to be ready
             await sandbox.wait()
             logger.info(f"[{generation_id}] Sandbox ready: {sandbox_name}")
             
@@ -94,18 +87,13 @@ class BlaxelClient:
             raise
     
     async def cleanup_sandbox(self, sandbox: SandboxInstance, generation_id: str) -> None:
-        """Clean up a Blaxel sandbox.
-        
-        Args:
-            sandbox: Sandbox instance to clean up
-            generation_id: Generation ID for logging
-        """
+        """clean up a blaxel sandbox."""
         try:
             logger.info(f"[{generation_id}] Cleaning up sandbox: {sandbox.metadata.name}")
             await sandbox.delete(sandbox.metadata.name)
-            logger.info(f"[{generation_id}] Sandbox deleted successfully")
+            logger.info(f"[{generation_id}] sandbox deleted successfully")
         except Exception as e:
-            logger.warning(f"[{generation_id}] Failed to cleanup sandbox: {e}")
+            logger.warning(f"[{generation_id}] failed to cleanup sandbox: {e}")
     
     async def generate_file_content(
         self, 
@@ -113,27 +101,18 @@ class BlaxelClient:
         instructions: str,
         generation_id: str
     ) -> str:
-        """Generate content for a specific file using OpenAI GPT-4.
-        
-        Args:
-            file_path: Path of file to generate
-            instructions: Generation instructions
-            generation_id: Generation ID for logging
-            
-        Returns:
-            Generated file content
-        """
+        """generate content for a file using openai gpt-4."""
         logger.debug(f"[{generation_id}] Generating {file_path}")
         
         try:
-            # Use OpenAI GPT-4 for high-quality code generation
+            # use openai gpt-4 for code generation
             logger.debug(f"[{generation_id}] Using OpenAI GPT-4 for {file_path}")
             
-            # Create specialized prompts based on file type
+            # create specialized prompts by file type
             system_prompt = self._get_system_prompt(file_path)
             user_prompt = self._create_generation_prompt(file_path, instructions)
             
-            # Generate content using GPT-4
+            # generate content via gpt-4
             response = await self.openai_client.chat.completions.create(
                 model="gpt-4o",  # Use GPT-4o for best results
                 messages=[
@@ -146,33 +125,26 @@ class BlaxelClient:
             
             content = response.choices[0].message.content.strip()
             
-            # Clean up any markdown code blocks if present
+            # strip markdown fences if present
             if content.startswith("```"):
                 lines = content.split('\n')
-                # Remove first line if it's ```language
+            # remove first ```language line
                 if lines[0].startswith("```"):
                     lines = lines[1:]
-                # Remove last line if it's ```
+            # remove trailing ``` line
                 if lines and lines[-1].strip() == "```":
                     lines = lines[:-1]
                 content = '\n'.join(lines)
             
-            logger.debug(f"[{generation_id}] Generated {file_path}: {len(content)} chars")
+            logger.debug(f"[{generation_id}] generated {file_path}: {len(content)} chars")
             return content
             
         except Exception as e:
-            logger.error(f"[{generation_id}] Failed to generate {file_path}: {e}")
+            logger.error(f"[{generation_id}] failed to generate {file_path}: {e}")
             raise
     
     def _get_system_prompt(self, file_path: str) -> str:
-        """Get specialized system prompt based on file type.
-        
-        Args:
-            file_path: Path of the file being generated
-            
-        Returns:
-            System prompt for the file type
-        """
+        """get system prompt content based on file type."""
         if file_path == "mcp_server.py":
             return """You are an expert Python developer specializing in Model Context Protocol (MCP) servers for Puch AI.
 
@@ -241,15 +213,7 @@ Include all necessary variables with clear descriptions and example values."""
 Create proper, valid content following best practices for the file type."""
 
     def _create_generation_prompt(self, file_path: str, instructions: str) -> str:
-        """Create the user prompt for file generation.
-        
-        Args:
-            file_path: Path of the file being generated
-            instructions: Generation instructions from the code generator
-            
-        Returns:
-            User prompt for generation
-        """
+        """create the user prompt for file generation."""
         return f"""Generate the complete content for the file: {file_path}
 
 {instructions}

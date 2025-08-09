@@ -1,17 +1,17 @@
 """
-Intent Parser for MCP Code Generator
+intent parser for mcp code generator
 
-Analyzes user prompts to extract requirements and determine what kind of MCP to generate - built only to make it fast enough to stay within Puch AI's timeout limit.
+analyzes user prompts to extract requirements for mcp generation.
 """
 
 from typing import Dict, List
 
 
 class IntentParser:
-    """Parses user prompts to understand MCP requirements."""
+    """parses user prompts to understand mcp requirements."""
     
     def __init__(self):
-        """Initialize the intent parser with keyword mappings."""
+        """init intent parser with keyword mappings."""
         self.api_keywords = {
             "weather": ["openweathermap", "weatherapi"],
             "flight": ["skyscanner", "amadeus", "expedia"],
@@ -60,15 +60,7 @@ class IntentParser:
         }
     
     async def parse_intent(self, prompt: str, include_database: bool = False) -> Dict:
-        """Parse user prompt to extract MCP requirements.
-        
-        Args:
-            prompt: User's natural language description
-            include_database: Whether user requested database functionality
-            
-        Returns:
-            Dictionary containing parsed intent and requirements
-        """
+        """parse user prompt to extract mcp requirements."""
         prompt_lower = prompt.lower()
         
         intent = {
@@ -89,31 +81,31 @@ class IntentParser:
         return intent
     
     def _extract_main_functionality(self, prompt: str) -> str:
-        """Extract the main functionality description."""
-        # Clean up the prompt for the main functionality
+        """extract main functionality description."""
+        # clean up the prompt for the main functionality
         cleaned = prompt.strip()
         if cleaned.endswith('.'):
             cleaned = cleaned[:-1]
         
-        # Capitalize first letter
+        # capitalize first letter
         if cleaned:
             cleaned = cleaned[0].upper() + cleaned[1:]
         
         return cleaned
     
     def _detect_apis(self, prompt: str) -> List[str]:
-        """Detect which APIs might be needed based on keywords."""
+        """detect which apis might be needed based on keywords."""
         detected_apis = []
         
         for category, apis in self.api_keywords.items():
             if any(keyword in prompt for keyword in [category] + [category + "s"]):
                 detected_apis.extend(apis[:1])  # Add primary API for category
         
-        # Remove duplicates while preserving order
+        # remove duplicates while preserving order
         return list(dict.fromkeys(detected_apis))
     
     def _determine_complexity(self, prompt: str) -> str:
-        """Determine the complexity level of the requested MCP."""
+        """determine complexity level of the requested mcp."""
         complexity_scores = {"simple": 0, "intermediate": 0, "advanced": 0}
         
         for level, keywords in self.complexity_indicators.items():
@@ -121,14 +113,14 @@ class IntentParser:
                 if keyword in prompt:
                     complexity_scores[level] += 1
         
-        # Default to intermediate if no clear indicators
+        # default to intermediate if no clear indicators
         if all(score == 0 for score in complexity_scores.values()):
             return "intermediate"
         
         return max(complexity_scores, key=complexity_scores.get)
     
     def _detect_functionality_type(self, prompt: str) -> str:
-        """Detect the primary type of functionality."""
+        """detect the primary type of functionality."""
         for func_type, keywords in self.functionality_patterns.items():
             if any(keyword in prompt for keyword in keywords):
                 return func_type
@@ -136,7 +128,7 @@ class IntentParser:
         return "general"
     
     def _needs_database(self, prompt: str) -> bool:
-        """Check if the MCP needs database functionality."""
+        """check if the mcp needs database functionality."""
         db_keywords = [
             "store", "save", "database", "persist", "history", "log", 
             "record", "track", "remember", "cache", "data", "manage",
@@ -145,7 +137,7 @@ class IntentParser:
         return any(keyword in prompt for keyword in db_keywords)
     
     def _needs_scheduling(self, prompt: str) -> bool:
-        """Check if the MCP needs scheduling/cron functionality."""
+        """check if the mcp needs scheduling/cron functionality."""
         schedule_keywords = [
             "schedule", "daily", "weekly", "monthly", "periodic", "regular",
             "cron", "timer", "interval", "recurring", "automatic"
@@ -153,7 +145,7 @@ class IntentParser:
         return any(keyword in prompt for keyword in schedule_keywords)
     
     def _needs_auth(self, prompt: str) -> bool:
-        """Check if the MCP needs authentication."""
+        """check if the mcp needs authentication."""
         auth_keywords = [
             "login", "auth", "user", "account", "secure", "private",
             "token", "key", "password", "credential"
@@ -161,7 +153,7 @@ class IntentParser:
         return any(keyword in prompt for keyword in auth_keywords)
     
     def _needs_user_data(self, prompt: str) -> bool:
-        """Check if the MCP needs user-specific data management."""
+        """check if the mcp needs user-specific data management."""
         user_data_keywords = [
             "task", "todo", "note", "reminder", "personal", "my", "user",
             "manage", "track", "list", "collection", "profile", "setting",
@@ -170,7 +162,7 @@ class IntentParser:
         return any(keyword in prompt for keyword in user_data_keywords)
     
     def _detect_data_operations(self, prompt: str) -> List[str]:
-        """Detect what kind of data operations are needed."""
+        """detect what kind of data operations are needed."""
         operations = []
         
         operation_keywords = {
@@ -190,10 +182,10 @@ class IntentParser:
         return operations if operations else ["read", "write"]
     
     def _extract_env_vars(self, prompt: str) -> List[str]:
-        """Extract likely environment variables needed."""
-        env_vars = ["AUTH_TOKEN", "MY_NUMBER"]  # Always needed for Puch AI
+        """extract likely environment variables needed."""
+        env_vars = ["AUTH_TOKEN", "MY_NUMBER"]  # always needed for puch ai
         
-        # API-specific environment variables
+        # api-specific environment variables
         api_env_map = {
             "openweathermap": ["OPENWEATHER_API_KEY"],
             "weatherapi": ["WEATHER_API_KEY"],
@@ -217,13 +209,13 @@ class IntentParser:
         if self._needs_database(prompt):
             env_vars.extend(["DATABASE_URL"])
         
-        return list(dict.fromkeys(env_vars))  # Remove duplicates
+        return list(dict.fromkeys(env_vars))  # remove duplicates
     
     def _suggest_packages(self, prompt: str) -> List[str]:
-        """Suggest additional Python packages based on functionality."""
+        """suggest additional python packages based on functionality."""
         packages = ["fastmcp", "python-dotenv", "httpx", "pydantic"]
         
-        # API-specific packages
+        # api-specific packages
         if any(api in prompt for api in ["weather", "openweather"]):
             packages.append("pyowm")
         
@@ -251,10 +243,10 @@ class IntentParser:
         if self._needs_scheduling(prompt):
             packages.append("schedule")
         
-        return list(dict.fromkeys(packages))  # Remove duplicates
+        return list(dict.fromkeys(packages))  # remove duplicates
     
     def _generate_deployment_notes(self, prompt: str) -> str:
-        """Generate deployment-specific notes."""
+        """generate deployment-specific notes."""
         notes = []
         
         if any(api in self._detect_apis(prompt) for api in ["openai", "anthropic"]):

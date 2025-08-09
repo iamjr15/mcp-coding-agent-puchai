@@ -1,7 +1,7 @@
 """
-Syntax Checker for MCP Code Generator
+syntax checker for mcp code generator
 
-Validates generated Python code for basic syntax correctness.
+validates generated python code for basic syntax correctness.
 """
 
 import ast
@@ -9,14 +9,7 @@ from typing import Dict
 
 
 def check_syntax(files: Dict[str, str]) -> Dict[str, str]:
-    """Check syntax of all Python files in the generated project.
-    
-    Args:
-        files: Dictionary mapping filenames to their content
-        
-    Returns:
-        Dictionary mapping filenames to their validation status
-    """
+    """check syntax of all python files in the generated project."""
     results = {}
     
     for filename, content in files.items():
@@ -31,15 +24,7 @@ def check_syntax(files: Dict[str, str]) -> Dict[str, str]:
 
 
 def _check_python_syntax(filename: str, content: str) -> str:
-    """Check Python file syntax using AST parsing.
-    
-    Args:
-        filename: Name of the Python file
-        content: File content to validate
-        
-    Returns:
-        Validation result string
-    """
+    """check python file syntax using ast parsing."""
     try:
         # Parse the content as Python AST
         ast.parse(content)
@@ -61,17 +46,10 @@ def _check_python_syntax(filename: str, content: str) -> str:
 
 
 def _check_mcp_requirements(content: str) -> str:
-    """Check MCP-specific requirements in the main server file.
-    
-    Args:
-        content: MCP server file content
-        
-    Returns:
-        Validation result with MCP-specific checks
-    """
+    """check mcp-specific requirements in the main server file."""
     issues = []
     
-    # Check for required imports
+    # check required imports
     required_imports = [
         ("fastmcp", "FastMCP import missing"),
         ("mcp.types", "MCP types import missing"),
@@ -81,19 +59,19 @@ def _check_mcp_requirements(content: str) -> str:
         if import_name not in content:
             issues.append(error_msg)
     
-    # Check for required validate tool
+    # check for required validate tool
     if "async def validate(" not in content and "@mcp.tool" in content:
         issues.append("validate() tool missing")
     
-    # Check for MY_NUMBER usage
+    # check for my_number usage
     if "MY_NUMBER" not in content and "validate" in content:
         issues.append("MY_NUMBER environment variable not used")
     
-    # Check for FastMCP initialization
+    # check fastmcp initialization
     if "FastMCP(" not in content:
         issues.append("FastMCP initialization missing")
     
-    # Check for main function
+    # check main function
     if "if __name__ ==" not in content and "async def main(" not in content:
         issues.append("Main execution block missing")
     
@@ -104,15 +82,7 @@ def _check_mcp_requirements(content: str) -> str:
 
 
 def _check_config_file(filename: str, content: str) -> str:
-    """Check configuration files for basic structure.
-    
-    Args:
-        filename: Name of the config file
-        content: File content to validate
-        
-    Returns:
-        Validation result string
-    """
+    """check configuration files for basic structure."""
     if filename == "requirements.txt":
         return _check_requirements_file(content)
     elif filename == "pyproject.toml":
@@ -124,20 +94,13 @@ def _check_config_file(filename: str, content: str) -> str:
 
 
 def _check_requirements_file(content: str) -> str:
-    """Check requirements.txt file structure.
-    
-    Args:
-        content: Requirements file content
-        
-    Returns:
-        Validation result string
-    """
+    """check requirements.txt file structure."""
     lines = [line.strip() for line in content.split('\n') if line.strip()]
     
     if not lines:
         return "ERROR: Empty requirements file"
     
-    # Check for required packages
+    # check required packages
     required_packages = ["fastmcp", "python-dotenv", "httpx"]
     missing_packages = []
     
@@ -148,7 +111,7 @@ def _check_requirements_file(content: str) -> str:
     if missing_packages:
         return f"WARNING: Missing packages: {', '.join(missing_packages)}"
     
-    # Check for invalid lines
+    # check invalid lines
     invalid_lines = []
     for i, line in enumerate(lines, 1):
         if not (
@@ -165,14 +128,7 @@ def _check_requirements_file(content: str) -> str:
 
 
 def _check_pyproject_file(content: str) -> str:
-    """Check pyproject.toml file structure.
-    
-    Args:
-        content: Pyproject file content
-        
-    Returns:
-        Validation result string
-    """
+    """check pyproject.toml file structure."""
     required_sections = ["[project]", "[build-system]"]
     missing_sections = []
     
@@ -183,7 +139,7 @@ def _check_pyproject_file(content: str) -> str:
     if missing_sections:
         return f"WARNING: Missing sections: {', '.join(missing_sections)}"
     
-    # Check for required fields
+    # check required fields
     required_fields = ["name", "version", "description"]
     missing_fields = []
     
@@ -198,14 +154,7 @@ def _check_pyproject_file(content: str) -> str:
 
 
 def _check_render_config(content: str) -> str:
-    """Check render.yaml configuration.
-    
-    Args:
-        content: Render config content
-        
-    Returns:
-        Validation result string
-    """
+    """check render.yaml configuration."""
     required_fields = ["services:", "type:", "env:", "buildCommand:", "startCommand:"]
     missing_fields = []
     
@@ -216,11 +165,11 @@ def _check_render_config(content: str) -> str:
     if missing_fields:
         return f"WARNING: Missing fields: {', '.join(missing_fields)}"
     
-    # Check for Python environment
+    # check python environment
     if "env: python" not in content:
         return "WARNING: Not configured for Python"
     
-    # Check for proper start command
+    # check proper start command
     if "python" not in content.lower() or "start" not in content.lower():
         return "WARNING: Start command may be incorrect"
     

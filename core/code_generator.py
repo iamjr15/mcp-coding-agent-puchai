@@ -1,7 +1,7 @@
 """
-Code Generator for MCP Code Generator
+code generator for mcp code generator
 
-Orchestrates the generation of complete MCP projects using OpenAI GPT-4.
+orchestrates generation of complete mcp projects using openai gpt-4.
 """
 
 import asyncio
@@ -14,10 +14,10 @@ logger = logging.getLogger(__name__)
 
 
 class CodeGenerator:
-    """Generates complete MCP projects using Blaxel AI."""
+    """generates complete mcp projects using blaxel ai."""
     
     def __init__(self):
-        """Initialize the code generator."""
+        """init code generator."""
         self.blaxel_client = BlaxelClient()
     
     async def generate_complete_mcp(
@@ -29,45 +29,33 @@ class CodeGenerator:
         progress_callback: Optional[Callable[[str], None]] = None,
         core_only: bool = False
     ) -> Dict[str, str]:
-        """Generate a complete MCP project with all necessary files.
-        
-        Args:
-            prompt: User's natural language description
-            intent: Parsed intent from IntentParser
-            deployment_target: Target deployment platform
-            generation_id: Unique identifier for this generation
-            progress_callback: Optional callback for progress updates
-            core_only: If True, generate only essential files (4 files ~25s vs 8+ files ~70s)
-            
-        Returns:
-            Dictionary mapping filenames to their content
-        """
+        """generate a complete mcp project with all necessary files."""
         def progress(msg: str):
-            """Send progress update."""
+            """send progress update."""
             logger.info(f"[{generation_id}] {msg}")
             if progress_callback:
                 progress_callback(msg)
         
         if core_only:
             progress("Starting CORE MCP generation with OpenAI (essential files only)")
-            # Core files only: mcp_server.py, requirements.txt, .env.example, README.md
+            # core files only: mcp_server.py, requirements.txt, .env.example, readme.md
             total_files = 4
         else:
             progress("Starting complete MCP generation with OpenAI")
-            # All project files
+            # all project files
             total_files = 6 + (2 if deployment_target == "render" else 1 if deployment_target == "vercel" else 0) + \
                          (1 if intent.get("requires_database") else 0) + \
                          (1 if intent.get("requires_scheduling") else 0) + \
                          (1 if intent.get("requires_user_data") else 0)
         
-        # Generate project files 
+        # generate project files
         files = {}
         
         if core_only:
-            # PARALLEL GENERATION for core files (much faster!)
+            # parallel generation for core files
             progress("Generating all 4 core files simultaneously...")
             
-            # Generate all core files in parallel using asyncio.gather
+            # generate core files in parallel using asyncio.gather
             core_tasks = [
                 self._generate_main_server(prompt, intent, generation_id),
                 self._generate_requirements(intent, generation_id),
@@ -78,7 +66,7 @@ class CodeGenerator:
             progress("Running parallel generation tasks...")
             core_results = await asyncio.gather(*core_tasks)
             
-            # Map results to filenames
+            # map results to filenames
             files["mcp_server.py"] = core_results[0]
             files["requirements.txt"] = core_results[1]
             files[".env.example"] = core_results[2]
@@ -87,29 +75,29 @@ class CodeGenerator:
             progress(f"Parallel generation complete - all {len(files)} core files generated!")
             
         else:
-            # PARALLEL GENERATION for ALL files (complete MCP in one batch)
+            # parallel generation for all files (complete mcp)
             progress(f"Generating all {total_files} files simultaneously...")
             
-            # Build complete list of files to generate in parallel
+            # build list of files to generate in parallel
             all_tasks = []
             
-            # 1. Core files (always needed)
+            # core files (always needed)
             all_tasks.append(("mcp_server.py", self._generate_main_server(prompt, intent, generation_id)))
             all_tasks.append(("requirements.txt", self._generate_requirements(intent, generation_id)))
             all_tasks.append((".env.example", self._generate_env_template(intent, generation_id)))
             all_tasks.append(("README.md", self._generate_readme(prompt, intent, generation_id)))
             
-            # 2. Deployment configuration
+            # deployment config
             if deployment_target == "render":
                 all_tasks.append(("render.yaml", self._generate_render_config(intent, generation_id)))
                 all_tasks.append(("render_start.py", self._generate_render_startup(generation_id)))
             elif deployment_target == "vercel":
                 all_tasks.append(("vercel.json", self._generate_vercel_config(intent, generation_id)))
             
-            # 3. Extended documentation
+            # extended docs
             all_tasks.append(("DEPLOYMENT.md", self._generate_deployment_guide(deployment_target, intent, generation_id)))
             
-            # 4. Optional modules based on intent
+            # optional modules based on intent
             if intent.get("requires_database"):
                 all_tasks.append(("database.py", self._generate_database_module(intent, generation_id)))
             
@@ -119,17 +107,17 @@ class CodeGenerator:
             if intent.get("requires_user_data"):
                 all_tasks.append(("USER_DATA_GUIDE.md", self._generate_user_data_guide(intent, generation_id)))
             
-            # Generate ALL files in parallel using asyncio.gather
+            # run parallel generation with asyncio.gather
             progress(f"Running parallel generation for all {len(all_tasks)} files...")
             
-            # Extract filenames and coroutines
+            # extract filenames and coroutines
             filenames = [task[0] for task in all_tasks]
             coroutines = [task[1] for task in all_tasks]
             
-            # Execute all generations in parallel
+            # execute all generations in parallel
             results = await asyncio.gather(*coroutines)
             
-            # Map results to filenames
+            # map results to filenames
             for filename, content in zip(filenames, results):
                 files[filename] = content
             
@@ -446,7 +434,7 @@ INCLUDE SECTIONS:
 2. Puch AI Compatibility Notice (highlight that this is designed specifically for Puch AI)
 3. Requirements and dependencies (mention cryptography for auth)
 4. Installation instructions
-5. 🔑 Authentication Setup (detailed AUTH_TOKEN and MY_NUMBER explanation)
+5. Authentication Setup (detailed AUTH_TOKEN and MY_NUMBER explanation)
 6. Environment variable setup with detailed explanations
 7. Usage examples and tool descriptions
 8. Deployment instructions for Render
@@ -463,9 +451,9 @@ PUCH AI SPECIFIC CONTENT:
 - Add troubleshooting for common Puch AI connection issues (401 errors, phone number validation, etc.)
 - Emphasize that this MCP uses advanced authentication and requires proper setup
 
-AUTHENTICATION SECTION TEMPLATE:
-```markdown
-## 🔑 Authentication Setup
+        AUTHENTICATION SECTION TEMPLATE:
+        ```markdown
+        ## Authentication Setup
 
 This MCP server uses bearer token authentication required by Puch AI.
 

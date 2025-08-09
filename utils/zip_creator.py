@@ -1,7 +1,7 @@
 """
-Zip Creator for MCP Code Generator
+zip creator for mcp code generator
 
-Creates downloadable zip packages containing generated MCP projects.
+creates downloadable zip packages containing generated mcp projects.
 """
 
 import hashlib
@@ -19,39 +19,30 @@ logger = logging.getLogger(__name__)
 
 
 async def create_download_zip(files: Dict[str, str], prompt: str, generation_id: str) -> str:
-    """Create a downloadable zip package containing all generated files.
-    
-    Args:
-        files: Dictionary mapping filenames to their content
-        prompt: Original user prompt (for metadata)
-        generation_id: Unique generation identifier
-        
-    Returns:
-        Download URL for the created package
-    """
-    # Ensure downloads directory exists
+    """create a downloadable zip package containing all generated files."""
+    # ensure downloads directory exists
     downloads_dir = Path("static/downloads")
     downloads_dir.mkdir(parents=True, exist_ok=True)
     
-    # Generate unique download ID
+    # generate unique download id
     download_id = _generate_download_id(prompt, generation_id)
     zip_filename = f"mcp_{download_id}.zip"
     zip_path = downloads_dir / zip_filename
     
-    logger.info(f"[{generation_id}] Creating zip package: {zip_filename}")
+    logger.info(f"[{generation_id}] creating zip package: {zip_filename}")
     
     try:
-        # Create zip file with all generated files
+        # create zip file with all generated files
         with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
             for filename, content in files.items():
                 zipf.writestr(filename, content)
-                logger.debug(f"[{generation_id}] Added {filename} to zip ({len(content)} bytes)")
+                logger.debug(f"[{generation_id}] added {filename} to zip ({len(content)} bytes)")
             
-            # Add generation metadata
+            # add generation metadata
             metadata = _create_metadata(prompt, generation_id, files)
             zipf.writestr("GENERATION_INFO.json", json.dumps(metadata, indent=2))
         
-        # Create download record
+        # create download record
         download_record = {
             "id": download_id,
             "generation_id": generation_id,
@@ -63,53 +54,36 @@ async def create_download_zip(files: Dict[str, str], prompt: str, generation_id:
             "zip_filename": zip_filename
         }
         
-        # Save download record
+        # save download record
         record_path = downloads_dir / f"{download_id}.json"
         with open(record_path, 'w') as f:
             json.dump(download_record, f, indent=2)
         
-        # Construct download URL (try .env first, then system env for Render)
+        # construct download url (prefer .env, fallback system env)
         env_vars = dotenv_values(".env")
         base_url = env_vars.get("DOWNLOAD_BASE_URL") or os.environ.get("DOWNLOAD_BASE_URL", "http://localhost:8086")
         download_url = f"{base_url}/download/{download_id}"
         
-        logger.info(f"[{generation_id}] Zip package created: {zip_path.stat().st_size:,} bytes")
+        logger.info(f"[{generation_id}] zip package created: {zip_path.stat().st_size:,} bytes")
         return download_url
         
     except Exception as e:
-        logger.error(f"[{generation_id}] Failed to create zip package: {e}")
-        # Clean up partial files
+        logger.error(f"[{generation_id}] failed to create zip package: {e}")
+        # clean up partial files
         if zip_path.exists():
             zip_path.unlink()
         raise
 
 
 def _generate_download_id(prompt: str, generation_id: str) -> str:
-    """Generate a unique download ID.
-    
-    Args:
-        prompt: User prompt
-        generation_id: Generation identifier
-        
-    Returns:
-        Unique download ID
-    """
+    """generate a unique download id."""
     # Create a hash from prompt, generation ID, and current time
     content = f"{prompt}{generation_id}{time.time()}".encode()
     return hashlib.sha256(content).hexdigest()[:16]
 
 
 def _create_metadata(prompt: str, generation_id: str, files: Dict[str, str]) -> Dict:
-    """Create metadata about the generation.
-    
-    Args:
-        prompt: Original user prompt
-        generation_id: Generation identifier
-        files: Generated files
-        
-    Returns:
-        Metadata dictionary
-    """
+    """create metadata about the generation."""
     return {
         "generation_info": {
             "id": generation_id,
@@ -140,14 +114,7 @@ def _create_metadata(prompt: str, generation_id: str, files: Dict[str, str]) -> 
 
 
 def _get_file_type(filename: str) -> str:
-    """Get the type description for a file.
-    
-    Args:
-        filename: Name of the file
-        
-    Returns:
-        File type description
-    """
+    """get the type description for a file."""
     if filename.endswith('.py'):
         return "Python source code"
     elif filename == 'requirements.txt':
@@ -167,14 +134,7 @@ def _get_file_type(filename: str) -> str:
 
 
 def _get_file_description(filename: str) -> str:
-    """Get a description for a file.
-    
-    Args:
-        filename: Name of the file
-        
-    Returns:
-        File description
-    """
+    """get a description for a file."""
     descriptions = {
         "mcp_server.py": "Main MCP server implementation",
         "requirements.txt": "Python package dependencies",
@@ -193,14 +153,7 @@ def _get_file_description(filename: str) -> str:
 
 
 def cleanup_expired_downloads(max_age_hours: int = 24) -> int:
-    """Clean up expired download files.
-    
-    Args:
-        max_age_hours: Maximum age of files to keep
-        
-    Returns:
-        Number of files cleaned up
-    """
+    """clean up expired download files."""
     downloads_dir = Path("static/downloads")
     if not downloads_dir.exists():
         return 0
@@ -210,7 +163,7 @@ def cleanup_expired_downloads(max_age_hours: int = 24) -> int:
     
     logger.info(f"Cleaning up downloads older than {max_age_hours} hours")
     
-    # Clean up zip files and their records
+    # clean up zip files and their records
     for json_file in downloads_dir.glob("*.json"):
         try:
             with open(json_file) as f:
@@ -245,11 +198,7 @@ def cleanup_expired_downloads(max_age_hours: int = 24) -> int:
 
 
 def get_download_stats() -> Dict:
-    """Get statistics about current downloads.
-    
-    Returns:
-        Dictionary with download statistics
-    """
+    """get statistics about current downloads."""
     downloads_dir = Path("static/downloads")
     if not downloads_dir.exists():
         return {"total_downloads": 0, "total_size": 0, "active_downloads": 0}
@@ -262,7 +211,7 @@ def get_download_stats() -> Dict:
         total_downloads += 1
         total_size += zip_file.stat().st_size
         
-        # Check if still active (not expired)
+        # check if still active (not expired)
         record_file = downloads_dir / f"{zip_file.stem.replace('mcp_', '')}.json"
         if record_file.exists():
             try:

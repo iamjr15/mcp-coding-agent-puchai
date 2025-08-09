@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Render.com startup script for MCP Code Generator.
+"""
+render.com startup script for mcp code generator
 
-This script starts the FastAPI application for deployment on Render.com
-as a persistent web service rather than a serverless function.
+starts the fastapi app for deployment on render as a persistent web service.
 """
 
 import os
@@ -10,17 +10,17 @@ import sys
 import asyncio
 from pathlib import Path
 
-# Add the project root to Python path
+# add project root to python path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
 import mcp_generator
 
 if __name__ == "__main__":
-    # Get port from environment variable (Render sets this automatically)
+    # get port from env (render sets this)
     port = int(os.environ.get("PORT", 8086))
     
-    # Run the MCP server directly (same as your astro MCP setup)
+    # run the mcp server
     async def run_mcp_server():
         print("\n" + "=" * 60)
         print("MCP CODE GENERATOR SERVER")
@@ -29,19 +29,19 @@ if __name__ == "__main__":
         print(f"[OK] Environment: {'Render' if 'RENDER' in os.environ else 'Local'}")
         print("=" * 60)
         
-        # Import the already-configured MCP server (it's initialized globally)
+        # import the configured mcp server (initialized globally)
         from mcp_generator import mcp, download_manager
         from datetime import datetime
         
-        # Create downloads directory
+        # create downloads directory
         downloads_dir = Path("static/downloads")
         downloads_dir.mkdir(parents=True, exist_ok=True)
-        print(f"📁 Downloads: {downloads_dir.absolute()}")
+        print(f"Downloads directory: {downloads_dir.absolute()}")
         
-        # Add the custom routes that are normally added in main()
+        # add custom routes (as in main())
         @mcp.custom_route(methods=["GET"], path="/download/{download_id}")
         async def download_mcp_endpoint(request):
-            # Extract download_id from the URL path
+            # extract download_id from url path
             path_parts = request.url.path.split('/')
             download_id = path_parts[-1]  # Get the last part of the path
             return await download_manager.serve_download(download_id)
@@ -63,8 +63,8 @@ if __name__ == "__main__":
         print(f"Downloads: {os.environ.get('DOWNLOAD_BASE_URL', 'Not Set')}/download/")
         print("=" * 60)
         
-        # Start the server with Render's port
+        # start server with render port
         await mcp.run_async("streamable-http", host="0.0.0.0", port=port)
     
-    # Run the MCP server directly like in your astro setup
+    # run the mcp server
     asyncio.run(run_mcp_server())
